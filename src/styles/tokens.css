@@ -1,0 +1,77 @@
+/*
+  Hifadhi design tokens.
+  All colours, spacing, radii and type sizes live here so the whole
+  interface stays consistent. Change a value here to restyle the app.
+*/
+:root {
+  /* Brand greens */
+  --green-950: #0b2e1c;
+  --green-900: #0f3b25; /* sidebar */
+  --green-800: #14532d; /* primary buttons */
+  --green-700: #1b6b3c; /* hover, active nav */
+  --green-600: #23834a;
+  --green-500: #3aa864; /* logo leaf accent */
+  --green-200: #cfe6d6;
+  --green-100: #e7f3ea;
+  --green-50: #f2f8f3;
+
+  /* Neutrals (cream palette) */
+  --cream-100: #f7f5ee; /* page background */
+  --cream-200: #efece1;
+  --cream-300: #e2ddcc;
+  --white: #ffffff;
+
+  --ink: #14241a; /* headings and main text */
+  --ink-soft: #33443a; /* body text */
+  --muted: #5b6b61; /* secondary text, 5.6:1 on white */
+  --border: #e1e4dc;
+  --border-strong: #cdd3c8;
+
+  /* Risk states (always paired with a text label) */
+  --risk-high-bg: #fde7e5;
+  --risk-high-text: #a61b12;
+  --risk-high-solid: #d63a2f;
+  --risk-medium-bg: #fdf1d3;
+  --risk-medium-text: #7a4d00;
+  --risk-medium-solid: #e0a126;
+  --risk-low-bg: #e1f3e5;
+  --risk-low-text: #17613a;
+  --risk-low-solid: #2f9a5a;
+
+  --info-bg: #e8f0fb;
+  --info-text: #1f4f8f;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-script: 'Dancing Script', 'Segoe Script', 'Brush Script MT', cursive; /* login quote only */
+  --fs-xs: 0.75rem; /* 12px */
+  --fs-sm: 0.8125rem; /* 13px */
+  --fs-base: 0.9375rem; /* 15px */
+  --fs-md: 1rem; /* 16px */
+  --fs-lg: 1.125rem; /* 18px */
+  --fs-xl: 1.375rem; /* 22px */
+  --fs-2xl: 1.75rem; /* 28px */
+  --fs-3xl: 2.25rem; /* 36px */
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 59, 37, 0.06);
+  --shadow: 0 1px 3px rgba(15, 59, 37, 0.08), 0 4px 12px rgba(15, 59, 37, 0.05);
+  --shadow-lg: 0 12px 32px rgba(11, 46, 28, 0.18);
+
+  --sidebar-width: 240px;
+  --topbar-height: 68px;
+}

@@ -71,29 +71,60 @@ The demo inventory is deliberately small: two products (Strawberry Yoghurt 500ml
 
 Screenshots of the Hifadhi interface are provided below.
 
-## Landing Page
-![Uploading image.png…]()
+Landing Page
+<img width="1902" height="915" alt="Screenshot 2026-10-08 133349" src="https://github.com/user-attachments/assets/c7d4e158-2f7c-4bc6-810e-e26c2637669d" />
+<img width="1917" height="915" alt="Screenshot 2026-10-08 133407" src="https://github.com/user-attachments/assets/d0beca92-c979-4bf0-b333-b9b2bb983e58" />
+<img width="1917" height="910" alt="Screenshot 2026-10-08 133433" src="https://github.com/user-attachments/assets/b14f99c9-cf6f-4722-bb71-8eed72e2cd9d" />
+
+Dashboard
+<img width="1917" height="910" alt="Screenshot 2026-10-08 144631" src="https://github.com/user-attachments/assets/6968c5d6-8135-45ff-84da-5d2624ba7420" />
+
+<img width="1917" height="912" alt="Screenshot 2026-10-08 144755" src="https://github.com/user-attachments/assets/813fd02f-6e5d-42c4-af9e-1ccf03b6c7ce" />
+
+Product Management
+<img width="1917" height="915" alt="Screenshot 2026-10-08 144830" src="https://github.com/user-attachments/assets/71d79706-9a17-4bcb-9903-72692dcc25be" />
 
 
+Inventory Management
+<img width="1917" height="907" alt="Screenshot 2026-10-08 144909" src="https://github.com/user-attachments/assets/49412ad2-5f74-4f2b-b070-c4844022f40c" />
 
-## Dashboard
 
-## Product Management
+Sales Data
+<img width="1917" height="912" alt="Screenshot 2026-10-08 144931" src="https://github.com/user-attachments/assets/eb8a326a-14c4-4088-9a94-349551d61674" />
 
-## Inventory Management
 
-## Sales Data
+Input Validation
 
-## Input Validation
+## Development Status
 
-Technologies Used
+Hifadhi is currently under development as a Software Engineering Final Capstone Project.
 
-React.js: Frontend interface development
+## Completed
 
-JavaScript: Application logic and data processing
+User interface design and navigation
 
-HTML & CSS: Interface structure and styling
+Product management CRUD
 
-React Router: Application navigation
+Inventory management CRUD
 
-Git & GitHub: Version control
+Sales data management CRUD
+
+Data input, processing and validation
+
+## Planned for Later Development
+
+Database integration and normalization
+
+Authentication and security improvements
+
+Machine-learning demand forecasting
+
+Inventory waste-risk assessment
+
+Decision-support recommendations
+
+System reporting and further integration
+
+The current prototype uses temporary application state for inventory, product and sales data. Database persistence will be introduced in a later development phase.
+
+

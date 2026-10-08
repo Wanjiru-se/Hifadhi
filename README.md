@@ -66,3 +66,34 @@ For each product:
 Example: Strawberry Yoghurt 500ml has 120 units, 7 days to expiry and a forecast of 85 units, so 35 units (KSh 4,200) are at risk.
 
 The demo inventory is deliberately small: two products (Strawberry Yoghurt 500ml, High risk, and Fresh Milk 1L, Medium risk), one batch each, plus a short daily sales series for the yoghurt chart. All figures live in `src/data/demoData.js`. When the backend and model are added, replace those arrays with API calls that return the same shape.
+
+## Screenshots
+
+Screenshots of the Hifadhi interface are provided below.
+
+## Landing Page
+![Uploading image.png…]()
+
+
+
+## Dashboard
+
+## Product Management
+
+## Inventory Management
+
+## Sales Data
+
+## Input Validation
+
+Technologies Used
+
+React.js: Frontend interface development
+
+JavaScript: Application logic and data processing
+
+HTML & CSS: Interface structure and styling
+
+React Router: Application navigation
+
+Git & GitHub: Version control

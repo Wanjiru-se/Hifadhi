@@ -4,7 +4,7 @@
   Validation is done in validateBatch() with a message under each field.
   Data is temporary (in memory) at this stage.
 */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { DEMO_TODAY } from '../data/demoData';
@@ -46,12 +46,15 @@ export function validateBatch(form, { batches, editingId, originalExpiry }) {
       form.receivedDate > DEMO_TODAY ? 'Date received cannot be in the future.' : '',
     ),
     expiryDate: firstError(required(form.expiryDate, 'Expiry date'), validDate(form.expiryDate, 'Expiry date')),
-    supplier: isEmpty(form.supplier)
-      ? ''
-      : firstError(
-          textLength(form.supplier, 'Supplier', { min: 2, max: 60 }),
-          matches(form.supplier, SUPPLIER_PATTERN, 'Supplier can only contain letters, numbers, spaces and . , \' & ( ) -'),
-        ),
+    supplier: firstError(
+  required(form.supplier, 'Supplier'),
+  textLength(form.supplier, 'Supplier', { min: 2, max: 60 }),
+  matches(
+    form.supplier,
+    SUPPLIER_PATTERN,
+    'Supplier can only contain letters, numbers, spaces and . , \' & ( ) -',
+  ),
+),
   };
 
   /* Date rules, checked once both dates are valid */
@@ -99,6 +102,21 @@ export default function AddBatchPage() {
           expiryDate: first ? addDays(DEMO_TODAY, first.shelfLifeDays) : '',
         },
   );
+  useEffect(() => {
+  if (!isEdit && selectedBranch?.id && products.length > 0) {
+    const nextBatchId = `BATCH-${String(batches.length + 1).padStart(3, '0')}`;
+    const selectedProduct =
+      products.find((product) => product.id === form.productId) ?? products[0];
+
+    setForm((current) => ({
+      ...current,
+      productId: selectedProduct.id,
+      branchId: selectedBranch.id,
+      batchId: nextBatchId,
+      unitCost: String(selectedProduct.unitCost),
+    }));
+  }
+}, [isEdit, selectedBranch?.id, batches.length, products.length]);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -147,33 +165,36 @@ export default function AddBatchPage() {
   const qty = /^\d+$/.test(form.quantity.trim()) ? Number(form.quantity) : 0;
   const cost = Number(form.unitCost) || 0;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
-    const found = validateBatch(form, context);
-    setErrors(found);
-    if (hasErrors(found)) return;
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const values = {
-      id: form.batchId.trim().toUpperCase(),
-      productId: form.productId,
-      branchId: form.branchId,
-      quantity: Number(form.quantity),
-      unitCost: Number(form.unitCost),
-      receivedDate: form.receivedDate,
-      expiryDate: form.expiryDate,
-      supplier: form.supplier.trim(),
-    };
-    if (isEdit) {
-      updateBatch(editingId, values);
-      navigate('/inventory', { state: { updatedBatch: values.id } });
-    } else {
-      /* atRiskUnits is kept for the later risk phase; not shown at this stage */
-      addBatch({ ...values, atRiskUnits: 0 });
-      navigate('/inventory', { state: { addedBatch: values.id } });
-    }
+  setSubmitted(true);
+
+  const found = validateBatch(form, context);
+  setErrors(found);
+
+  if (hasErrors(found)) return;
+
+  const values = {
+    id: form.batchId.trim().toUpperCase(),
+    productId: form.productId,
+    branchId: form.branchId,
+    quantity: Number(form.quantity),
+    unitCost: Number(form.unitCost),
+    receivedDate: form.receivedDate,
+    expiryDate: form.expiryDate,
+    supplier: form.supplier.trim(),
   };
 
+  if (isEdit) {
+    await updateBatch(editingId, values);
+    navigate('/inventory', { state: { updatedBatch: values.id } });
+  } else {
+    /* atRiskUnits is kept for the later risk phase; not shown at this stage */
+    await addBatch({ ...values, atRiskUnits: 0 });
+    navigate('/inventory', { state: { addedBatch: values.id } });
+  }
+};
   const title = isEdit ? 'Edit Inventory Batch' : 'Add Inventory Batch';
 
   return (
@@ -220,7 +241,7 @@ export default function AddBatchPage() {
               <TextField label="Unit cost (KSh)" required inputMode="decimal" value={form.unitCost} onChange={update('unitCost')} error={errors.unitCost} hint="Up to 2 decimal places" />
               <TextField label="Date received" type="date" required max={DEMO_TODAY} value={form.receivedDate} onChange={update('receivedDate')} error={errors.receivedDate} />
               <TextField label="Expiry date" type="date" required value={form.expiryDate} onChange={update('expiryDate')} error={errors.expiryDate} hint={product ? `Typical shelf life for this product: ${product.shelfLifeDays} days` : undefined} />
-              <TextField className="span-2" label="Supplier" placeholder="e.g. Brookside Dairy" maxLength={60} value={form.supplier} onChange={update('supplier')} error={errors.supplier} hint="Optional, 2 to 60 characters" />
+              <TextField className="span-2" label="Supplier" required placeholder="e.g. Brookside Dairy" maxLength={60} value={form.supplier} onChange={update('supplier')} error={errors.supplier} hint="Required, 2 to 60 characters" />
             </div>
 
             {submitted && hasErrors(errors) && (

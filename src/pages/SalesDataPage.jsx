@@ -8,7 +8,6 @@
 */
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { DEMO_TODAY } from '../data/demoData';
 import { formatDate, formatKSh } from '../utils/format';
 import { availableUnits, heldUnits } from '../utils/stock';
 import { firstError, hasErrors, required, validDate, wholeNumber } from '../utils/validation';
@@ -35,7 +34,9 @@ export function validateSale(form, sales, editingId, batches) {
     date: firstError(
       required(form.date, 'Sale date'),
       validDate(form.date, 'Sale date'),
-      form.date > DEMO_TODAY ? 'Sale date cannot be in the future.' : '',
+      form.date > new Date().toLocaleDateString('en-CA')
+  ? 'Sale date cannot be in the future.'
+  : '',
       form.date < EARLIEST_DATE ? 'Sale date cannot be before 1 January 2020.' : '',
     ),
     productId: required(form.productId, 'Product'),
@@ -65,7 +66,7 @@ function SaleModal({ sale, sales, products, batches, onSave, onClose }) {
   const [form, setForm] = useState(
     sale
       ? { date: sale.date, productId: sale.productId, quantity: String(sale.quantity) }
-      : { date: DEMO_TODAY, productId: '', quantity: '' },
+      : { date: new Date().toLocaleDateString('en-CA'), productId: '', quantity: '' },
   );
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -101,7 +102,7 @@ function SaleModal({ sale, sales, products, batches, onSave, onClose }) {
       )}
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
-          <TextField label="Sale date" type="date" required min={EARLIEST_DATE} max={DEMO_TODAY} value={form.date} onChange={update('date')} error={errors.date} />
+          <TextField label="Sale date" type="date" required min={EARLIEST_DATE} max={new Date().toLocaleDateString('en-CA')} value={form.date} onChange={update('date')} error={errors.date} />
           <TextField label="Units sold" required inputMode="numeric" placeholder="e.g. 12" value={form.quantity} onChange={update('quantity')} error={errors.quantity} hint={available === null ? 'Whole number, 1 to 10,000' : `Available: ${available} units`} />
           <SelectField
             className="span-2"
@@ -134,23 +135,34 @@ export default function SalesDataPage() {
   const unitsSold = sales.reduce((s, r) => s + r.quantity, 0);
   const revenue = sales.reduce((s, r) => s + r.quantity * (findProduct(r.productId)?.unitPrice ?? 0), 0);
 
-  const handleSave = (values) => {
-    const name = findProduct(values.productId)?.name;
-    if (editing === 'new') {
-      addSale({ id: `s-${Date.now()}`, ...values });
-      setNotice(`Sales record for ${name} on ${formatDate(values.date)} was added.`);
-    } else {
-      updateSale(editing.id, values);
-      setNotice(`Sales record for ${name} on ${formatDate(values.date)} was updated.`);
-    }
-    setEditing(null);
-  };
+ const handleSave = async (values) => {
+  const name = findProduct(values.productId)?.name;
 
-  const handleDelete = () => {
-    deleteSale(deleting.id);
-    setNotice(`Sales record for ${findProduct(deleting.productId)?.name} on ${formatDate(deleting.date)} was deleted.`);
+  if (editing === 'new') {
+    await addSale(values);
+    setNotice(`Sales record for ${name} on ${formatDate(values.date)} was added.`);
+  } else {
+    await updateSale(editing.id, values);
+    setNotice(`Sales record for ${name} on ${formatDate(values.date)} was updated.`);
+  }
+
+  setEditing(null);
+};
+
+  const handleDelete = async () => {
+  try {
+    await deleteSale(deleting.id);
+
+    setNotice(
+      `Sales record for ${findProduct(deleting.productId)?.name} on ${formatDate(deleting.date)} was deleted.`
+    );
+
     setDeleting(null);
-  };
+  } catch (error) {
+    console.error('Failed to delete sale:', error);
+    alert(error.message || 'Failed to delete sales record');
+  }
+};
 
   return (
     <div className="stack">

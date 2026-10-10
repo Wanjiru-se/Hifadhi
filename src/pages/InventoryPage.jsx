@@ -43,13 +43,15 @@ export default function InventoryPage() {
   const totalUnits = batches.reduce((s, b) => s + b.quantity, 0);
   const stockValue = batches.reduce((s, b) => s + b.quantity * (b.unitCost ?? findProduct(b.productId)?.unitCost ?? 0), 0);
 
-  const handleDelete = () => {
-    deleteBatch(deleting.id);
-    setDeletedId(deleting.id);
-    setDeleting(null);
-    /* Clear any added/updated notice from the previous page */
-    navigate('/inventory', { replace: true, state: null });
-  };
+  const handleDelete = async () => {
+  await deleteBatch(deleting.id);
+
+  setDeletedId(deleting.id);
+  setDeleting(null);
+
+  /* Clear any added/updated notice from the previous page */
+  navigate('/inventory', { replace: true, state: null });
+};
 
   const notice = deletedId
     ? `Batch ${deletedId} was deleted.`

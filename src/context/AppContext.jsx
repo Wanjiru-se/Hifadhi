@@ -8,7 +8,7 @@
   remembered in localStorage so a page refresh keeps you signed in, and all
   data changes are kept in memory and reset on refresh.
 */
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   batches as demoBatches,
   branches as demoBranches,
@@ -79,26 +79,115 @@ export function AppProvider({ children }) {
   const [userList, setUserList] = useState(() =>
     stored?.session?.userId === 'u-owner' ? [ownerUser(stored.session)] : demoUsers,
   );
-  const [productList, setProductList] = useState(demoProducts);
-  const [batchList, setBatchList] = useState(() =>
-    /* Older demo batches have no unit cost, so take it from their product */
-    demoBatches.map((b) => ({
-      unitCost: demoProducts.find((p) => p.id === b.productId)?.unitCost ?? 0,
-      ...b,
-    })),
-  );
+  const [productList, setProductList] = useState([]);
+  useEffect(() => {
+  async function loadProducts() {
+    try {
+      const response = await fetch('http://localhost:5000/api/products');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+
+      const products = await response.json();
+      setProductList(products);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  }
+
+  loadProducts();
+}, []);
+ const [batchList, setBatchList] = useState([]);
+
+useEffect(() => {
+  async function loadInventory() {
+    try {
+      const response = await fetch('http://localhost:5000/api/inventory');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch inventory');
+      }
+
+      const batches = await response.json();
+
+      setBatchList(batches);
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+    }
+  }
+
+  loadInventory();
+}, []);
+
+useEffect(() => {
+  async function loadSales() {
+    try {
+      const response = await fetch('http://localhost:5000/api/sales');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch sales');
+      }
+
+      const sales = await response.json();
+
+      setSalesList(sales);
+    } catch (error) {
+      console.error('Error loading sales:', error);
+    }
+  }
+
+  loadSales();
+}, []);
   /* Opening sales history: already reflected in the opening batch quantities, so no allocations */
-  const [salesList, setSalesList] = useState(demoSales);
+  const [salesList, setSalesList] = useState([]);
+  const [databaseBranches, setDatabaseBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('br-kilimani');
+  useEffect(() => {
+  async function loadBranches() {
+    try {
+      const response = await fetch('http://localhost:5000/api/branches');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch branches');
+      }
+
+      const branches = await response.json();
+
+      setDatabaseBranches(branches);
+
+      const kilimani = branches.find((branch) => branch.name === 'Kilimani');
+
+      if (kilimani) {
+        setSelectedBranchId(kilimani.id);
+      }
+    } catch (error) {
+      console.error('Error loading branches:', error);
+    }
+  }
+
+  loadBranches();
+}, []);
 
   const persist = useCallback((next) => {
     saveStored(next);
   }, []);
 
   const baseBranches =
-    branchMode === 'multi' ? demoBranches : singleBranchSetup(stored?.setup ?? {});
-  const branchList = [...baseBranches, ...extraBranches];
-  const isMultiBranch = branchList.length > 1;
+  branchMode === 'multi' ? demoBranches : singleBranchSetup(stored?.setup ?? {});
+const branchList =
+  databaseBranches.length > 0
+    ? databaseBranches
+    : [...baseBranches, ...extraBranches];
+    useEffect(() => {
+  if (
+    databaseBranches.length > 0 &&
+    !databaseBranches.some((branch) => branch.id === selectedBranchId)
+  ) {
+    setSelectedBranchId(databaseBranches[0].id);
+  }
+}, [databaseBranches, selectedBranchId]);
+const isMultiBranch = branchList.length > 1;
 
   const currentUser = session
     ? userList.find((u) => u.id === session.userId) ?? {
@@ -169,74 +258,314 @@ export function AppProvider({ children }) {
   );
 
   /* Products */
-  const addProduct = useCallback((product) => {
-    setProductList((list) => [...list, product]);
-  }, []);
-  const updateProduct = useCallback((id, changes) => {
-    setProductList((list) => list.map((p) => (p.id === id ? { ...p, ...changes } : p)));
-  }, []);
-  const deleteProduct = useCallback((id) => {
-    setProductList((list) => list.filter((p) => p.id !== id));
-  }, []);
+  const addProduct = useCallback(async (product) => {
+  try {
+    const response = await fetch('http://localhost:5000/api/products', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(product),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add product');
+    }
+
+    const savedProduct = await response.json();
+
+    setProductList((list) => [...list, savedProduct]);
+
+    return savedProduct;
+  } catch (error) {
+    console.error('Error adding product:', error);
+    throw error;
+  }
+}, []);
+  const updateProduct = useCallback(async (id, changes) => {
+  try {
+    const response = await fetch(`http://localhost:5000/api/products/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(changes),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update product');
+    }
+
+    const updatedProduct = await response.json();
+
+    setProductList((list) =>
+      list.map((product) =>
+        product.id === id ? updatedProduct : product
+      ),
+    );
+
+    return updatedProduct;
+  } catch (error) {
+    console.error('Error updating product:', error);
+    throw error;
+  }
+}, []);
+  const deleteProduct = useCallback(async (id) => {
+  try {
+    const response = await fetch(`http://localhost:5000/api/products/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete product');
+    }
+
+    setProductList((list) =>
+      list.filter((product) => product.id !== id)
+    );
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
+}, []);
 
   /* Inventory batches (id is the Batch ID, which can be edited) */
-  const addBatch = useCallback((batch) => {
-    setBatchList((list) => [...list, batch]);
-  }, []);
-  const updateBatch = useCallback((id, changes) => {
-    setBatchList((list) => list.map((b) => (b.id === id ? { ...b, ...changes } : b)));
-    /* If the Batch ID was renamed, keep sales pointing at the same batch */
-    if (changes.id && changes.id !== id) {
-      setSalesList((list) =>
-        list.map((s) =>
-          s.allocations?.some((a) => a.batchId === id)
-            ? { ...s, allocations: s.allocations.map((a) => (a.batchId === id ? { ...a, batchId: changes.id } : a)) }
-            : s,
-        ),
-      );
+  const addBatch = useCallback(async (batch) => {
+  try {
+    const response = await fetch('http://localhost:5000/api/inventory', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(batch),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add inventory batch');
     }
-  }, []);
-  const deleteBatch = useCallback((id) => {
-    setBatchList((list) => list.filter((b) => b.id !== id));
-  }, []);
+
+    const savedBatch = await response.json();
+
+    setBatchList((list) => [...list, savedBatch]);
+
+    return savedBatch;
+  } catch (error) {
+    console.error('Error adding inventory batch:', error);
+    throw error;
+  }
+}, []);
+  const updateBatch = useCallback(async (id, changes) => {
+  try {
+    const currentBatch = batchList.find((batch) => batch.id === id);
+
+    if (!currentBatch?.databaseId) {
+      throw new Error('Database batch ID not found');
+    }
+
+    const response = await fetch(
+      `http://localhost:5000/api/inventory/${currentBatch.databaseId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(changes),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to update inventory batch');
+    }
+
+    const updatedBatch = await response.json();
+
+    setBatchList((list) =>
+      list.map((batch) =>
+        batch.id === id ? updatedBatch : batch
+      ),
+    );
+
+    return updatedBatch;
+  } catch (error) {
+    console.error('Error updating inventory batch:', error);
+    throw error;
+  }
+}, [batchList]);
+  const deleteBatch = useCallback(async (id) => {
+  try {
+    const currentBatch = batchList.find((batch) => batch.id === id);
+
+    if (!currentBatch?.databaseId) {
+      throw new Error('Database batch ID not found');
+    }
+
+    const response = await fetch(
+      `http://localhost:5000/api/inventory/${currentBatch.databaseId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to delete inventory batch');
+    }
+
+    setBatchList((list) => list.filter((batch) => batch.id !== id));
+  } catch (error) {
+    console.error('Error deleting inventory batch:', error);
+    throw error;
+  }
+}, [batchList]);
 
   /*
     Sales records and their effect on stock (see utils/stock.js).
     Callers validate available stock first; these only apply the change.
   */
   const addSale = useCallback(
-    (sale) => {
-      const { batches, allocations } = allocateFefo(batchList, sale.productId, sale.quantity);
-      setBatchList(batches);
-      setSalesList((list) => [...list, { ...sale, allocations }]);
-    },
-    [batchList],
-  );
-  const updateSale = useCallback(
-    (id, changes) => {
-      const old = salesList.find((s) => s.id === id);
-      if (!old) return;
-      /* Opening records are already reflected in stock: update the record only */
-      if (!old.allocations) {
-        setSalesList((list) => list.map((s) => (s.id === id ? { ...s, ...changes } : s)));
-        return;
+  async (sale) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: sale.productId,
+          branchId: selectedBranchId,
+          quantity: sale.quantity,
+          date: sale.date,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add sale');
       }
-      const restored = returnAllocations(batchList, old.allocations);
-      const next = { ...old, ...changes };
-      const { batches, allocations } = allocateFefo(restored, next.productId, next.quantity);
-      setBatchList(batches);
-      setSalesList((list) => list.map((s) => (s.id === id ? { ...next, allocations } : s)));
-    },
-    [batchList, salesList],
-  );
-  const deleteSale = useCallback(
-    (id) => {
-      const old = salesList.find((s) => s.id === id);
-      if (old?.allocations) setBatchList(returnAllocations(batchList, old.allocations));
-      setSalesList((list) => list.filter((s) => s.id !== id));
-    },
-    [batchList, salesList],
-  );
+
+      const savedSale = await response.json();
+
+      setSalesList((list) => [...list, savedSale]);
+
+// Reload inventory because PostgreSQL has already
+// deducted the stock using FEFO.
+const inventoryResponse = await fetch(
+  'http://localhost:5000/api/inventory'
+);
+
+if (!inventoryResponse.ok) {
+  throw new Error('Sale saved, but inventory refresh failed');
+}
+
+const updatedBatches = await inventoryResponse.json();
+setBatchList(updatedBatches); 
+
+      return savedSale;
+    } catch (error) {
+      console.error('Error adding sale:', error);
+      throw error;
+    }
+  },
+  [batchList, selectedBranchId],
+);
+  const updateSale = useCallback(
+  async (id, changes) => {
+    try {
+      const oldSale = salesList.find((sale) => sale.id === id);
+
+      if (!oldSale) {
+        throw new Error('Sales record not found');
+      }
+
+      const response = await fetch(
+        `http://localhost:5000/api/sales/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productId: changes.productId,
+            branchId: oldSale.branchId,
+            quantity: changes.quantity,
+            date: changes.date,
+          }),
+        },
+      );
+
+      const updatedSale = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          updatedSale.message || 'Failed to update sales record'
+        );
+      }
+
+      // Update the Sales list with the saved database record
+      setSalesList((list) =>
+        list.map((sale) =>
+          sale.id === id ? updatedSale : sale
+        )
+      );
+
+      // Reload inventory because PostgreSQL handles FEFO
+      const inventoryResponse = await fetch(
+        'http://localhost:5000/api/inventory'
+      );
+
+      if (!inventoryResponse.ok) {
+        throw new Error('Sale updated, but inventory refresh failed');
+      }
+
+      const updatedBatches = await inventoryResponse.json();
+      setBatchList(updatedBatches);
+
+      return updatedSale;
+    } catch (error) {
+      console.error('Error updating sale:', error);
+      throw error;
+    }
+  },
+  [salesList],
+);
+  const deleteSale = useCallback(async (id) => {
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/sales/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || 'Failed to delete sales record'
+      );
+    }
+
+    // Remove the deleted sale from the frontend
+    setSalesList((list) =>
+      list.filter((sale) => sale.id !== id)
+    );
+
+    // Reload inventory after PostgreSQL restores the stock
+    const inventoryResponse = await fetch(
+      'http://localhost:5000/api/inventory'
+    );
+
+    if (!inventoryResponse.ok) {
+      throw new Error('Sale deleted, but inventory refresh failed');
+    }
+
+    const updatedBatches = await inventoryResponse.json();
+    setBatchList(updatedBatches);
+
+    return result;
+  } catch (error) {
+    console.error('Error deleting sale:', error);
+    throw error;
+  }
+}, []);
 
   const addBranch = useCallback((branch) => {
     setExtraBranches((list) => [...list, branch]);
